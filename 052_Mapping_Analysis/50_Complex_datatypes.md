@@ -59,7 +59,7 @@
 
 Elasticsearch 会动态的检测新对象的字段，并且映射它们为 `object` 类型，将每个字段加到 `properties` 字段下
 
-```javascript
+```json
 {
   "gb": {
     "tweet": { <1>
@@ -90,20 +90,12 @@ Elasticsearch 会动态的检测新对象的字段，并且映射它们为 `obje
 <1> 根对象.
 <2> 内部对象.
 
-The mapping for the `user` and `name` fields have a similar structure
-to the mapping for the `tweet` type itself.  In fact, the `type` mapping
-is just a special type of `object` mapping, which we refer to as the
-_root object_.  It is just the same as any other object, except that it has
-some special top-level fields for document metadata, like `_source`,
-the `_all` field etc.
 
 对`user`和`name`字段的映射与`tweet`类型自己很相似。事实上，`type`映射只是`object`映射的一种特殊类型，我们将 `object` 称为_根对象_。它与其他对象一模一样，除非它有一些特殊的顶层字段，比如 `_source`, `_all` 等等。
 
 ### 内部对象是怎样被索引的
 
-Lucene doesn't understand inner objects. A Lucene document consists of a flat
-list of key-value pairs.  In order for Elasticsearch to index inner objects
-usefully, it converts our document into something like this:
+Lucene 并不了解内部对象。 一个 Lucene 文件包含一个键-值对应的扁平表单。 为了让 Elasticsearch 可以有效的索引内部对象，将文件转换为以下格式：
 
 ```javascript
 {
@@ -117,23 +109,16 @@ usefully, it converts our document into something like this:
 }
 ```
 
-_Inner fields_ can be referred to by name, eg `"first"`. To distinguish
-between two fields that have the same name we can use the full _path_,
-eg `"user.name.first"` or even the `type` name plus
-the path: `"tweet.user.name.first"`.
+_内部栏位_可被归类至name，例如`"first"`。 为了区别两个拥有相同名字的栏位，我们可以使用完整_路径_，例如`"user.name.first"` 或甚至`类型`名称加上路径：`"tweet.user.name.first"`。
 
-NOTE: In the simple flattened document above, there is no field called `user`
-and no field called `user.name`.  Lucene only indexes scalar or simple values,
-not complex datastructures.
+注意： 在以上扁平化文件中，并没有栏位叫作`user`也没有栏位叫作`user.name`。 Lucene 只索引阶层或简单的值，而不会索引复杂的资料结构。
 
-[[object-arrays]]
-==== Arrays of inner objects
+## 对象-阵列
+### 内部对象的阵列
 
-Finally, consider how an array containing inner objects would be indexed.
-Let's say we have a `followers` array which looks like this:
+最後，一个包含内部对象的阵列如何索引。 我们有个阵列如下所示：
 
-[source,js]
---------------------------------------------------
+```json
 {
     "followers": [
         { "age": 35, "name": "Mary White"},
@@ -141,31 +126,25 @@ Let's say we have a `followers` array which looks like this:
         { "age": 19, "name": "Lisa Smith"}
     ]
 }
---------------------------------------------------
+```
 
 
-This document will be flattened as we described above, but the result will
-look like this:
+此文件会如我们以上所说的被扁平化，但其结果会像如此：
 
-[source,js]
---------------------------------------------------
+```json
 {
     "followers.age":    [19, 26, 35],
     "followers.name":   [alex, jones, lisa, smith, mary, white]
 }
---------------------------------------------------
+```
 
 
-The correlation between `{age: 35}` and `{name: Mary White}` has been lost as
-each multi-value field is just a bag of values, not an ordered array.  This is
-sufficient for us to ask:
+`{age: 35}`与`{name: Mary White}`之间的关联会消失，因每个多值的栏位会变成一个值集合，而非有序的阵列。 这让我们可以知道：
 
-* _Is there a follower who is 26 years old?_
+* _是否有26岁的追随者？_
 
-but we can't get an accurate answer to:
+但我们无法取得准确的资料如：
 
-* _Is there a follower who is 26 years old **and who is called Alex Jones?**_
+* _是否有26岁的追随者**且名字叫Alex Jones？**_
 
-Correlated inner objects, which are able to answer queries like these,
-are called _nested_ objects, and we will discuss them later on in
-<<nested-objects>>.
+关联内部对象可解决此类问题，我们称之为_嵌套_对象，我们之後会在嵌套对象中提到它。
